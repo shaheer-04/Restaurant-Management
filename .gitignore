@@ -1,0 +1,29 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.sqlite3
+
+# Frontend
+node_modules/
+dist/
+
+# Generated files
+staticfiles/
+media/
+test-results/
+playwright-report/
+*.log
+
+# Backups and archives
+*.sql
+*.dump
+*.backup
+*.zip
+*.rar

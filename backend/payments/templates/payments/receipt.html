@@ -1,0 +1,318 @@
+{% load tz %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Receipt {{ payment.id }} | MR. COD</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px 12px;
+            background: #123b8b;
+            color: #111;
+            font-family: Arial, sans-serif;
+        }
+
+        .toolbar {
+            max-width: 420px;
+            margin: 0 auto 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .toolbar p {
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .print-button {
+            padding: 12px 24px;
+            border: 0;
+            border-radius: 8px;
+            background: #ffd338;
+            color: #123b8b;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .print-button:focus-visible {
+            outline: 3px solid white;
+            outline-offset: 4px;
+        }
+
+        .receipt {
+            width: 72mm;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 4mm;
+            background: white;
+            font-size: 12px;
+            line-height: 1.4;
+            overflow-wrap: anywhere;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 26px;
+            letter-spacing: 1px;
+        }
+
+        p {
+            margin: 4px 0;
+        }
+
+        .divider {
+            border: 0;
+            border-top: 1px dashed #111;
+            margin: 12px 0;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 8px;
+            margin: 5px 0;
+        }
+
+        .row > :last-child {
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            padding: 6px 0;
+            vertical-align: top;
+        }
+
+        th {
+            text-align: left;
+            border-bottom: 1px dashed #111;
+        }
+
+        .item-column {
+            width: 64%;
+            padding-right: 8px;
+        }
+
+        .amount-column {
+            width: 36%;
+            text-align: right;
+        }
+
+        .item-name {
+            font-weight: bold;
+        }
+
+        .item-detail {
+            margin-top: 2px;
+            font-size: 11px;
+        }
+
+        .total {
+            padding-top: 8px;
+            border-top: 1px dashed #111;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .footer {
+            margin-top: 16px;
+            text-align: center;
+        }
+
+        @page {
+            size: auto;
+            margin: 0;
+        }
+
+        @media print {
+            html,
+            body {
+                margin: 0;
+                padding: 0;
+                background: white;
+                color: black;
+            }
+
+            .toolbar {
+                display: none;
+            }
+
+            .receipt {
+                width: 72mm;
+                max-width: 100%;
+                margin: 0 auto;
+                padding: 3mm 2mm;
+            }
+
+            tr,
+            .row,
+            .footer {
+                break-inside: avoid;
+            }
+
+            thead {
+                display: table-header-group;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="toolbar">
+        <button
+            class="print-button"
+            type="button"
+            onclick="window.print()"
+        >
+            Print receipt
+        </button>
+        <p>
+            Select your 80mm printer.
+            Turn off browser headers and footers.
+        </p>
+    </div>
+
+    <main class="receipt">
+        <header class="center">
+            <h1>MR. COD</h1>
+            <p>Payment Receipt</p>
+            <p><strong>PAID</strong></p>
+        </header>
+
+        <hr class="divider">
+
+        <div class="row">
+            <span>Receipt</span>
+            <strong>#{{ payment.id }}</strong>
+        </div>
+
+        <div class="row">
+            <span>Order</span>
+            <strong>#{{ order.id }}</strong>
+        </div>
+
+        <div class="row">
+            <span>Order type</span>
+            <span>{{ order.get_order_type_display }}</span>
+        </div>
+
+        {% if order.table %}
+        <div class="row">
+            <span>Table</span>
+            <span>{{ order.table.table_number }}</span>
+        </div>
+        {% endif %}
+
+        <p>
+            Paid:
+            {{ payment.created_at|localtime|date:"d M Y, h:i A" }}
+        </p>
+
+        <p>Cashier: {{ payment.recorded_by.username }}</p>
+
+        <hr class="divider">
+
+        <table aria-label="Purchased items">
+            <thead>
+                <tr>
+                    <th class="item-column">Item / Qty × Rate</th>
+                    <th class="amount-column">Amount</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td class="item-column">
+                        <div class="item-name">
+                            {{ item.item_name }}
+                        </div>
+                        <div class="item-detail">
+                            {{ item.quantity }} ×
+                            {{ item.unit_price|floatformat:"2u" }}
+                        </div>
+                    </td>
+                    <td class="amount-column">
+                        {{ item.line_total|floatformat:"2u" }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <hr class="divider">
+
+        <div class="row">
+            <span>Subtotal</span>
+            <span>{{ payment.subtotal|floatformat:"2u" }}</span>
+        </div>
+
+        <div class="row">
+            <span>
+                Discount
+                {% if payment.discount_type == "percentage" %}
+                    ({{ payment.discount_value|floatformat:"2u" }}%)
+                {% endif %}
+            </span>
+            <span>-{{ payment.discount_amount|floatformat:"2u" }}</span>
+        </div>
+
+        <div class="row">
+            <span>After discount</span>
+            <span>{{ payment.taxable_amount|floatformat:"2u" }}</span>
+        </div>
+
+        <div class="row">
+            <span>Tax ({{ payment.tax_rate|floatformat:"2u" }}%)</span>
+            <span>{{ payment.tax_amount|floatformat:"2u" }}</span>
+        </div>
+
+        <div class="row total">
+            <span>Total {{ payment.currency }}</span>
+            <span>{{ payment.total|floatformat:"2u" }}</span>
+        </div>
+
+        <hr class="divider">
+
+        <div class="row">
+            <span>Payment method</span>
+            <span>{{ payment.get_method_display }}</span>
+        </div>
+
+        <div class="row">
+            <span>Amount received</span>
+            <span>{{ payment.amount_received|floatformat:"2u" }}</span>
+        </div>
+
+        <div class="row">
+            <span>Change</span>
+            <span>{{ payment.change_due|floatformat:"2u" }}</span>
+        </div>
+
+        <footer class="footer">
+            <p>All amounts in {{ payment.currency }}.</p>
+            <p><strong>Thank you for your order!</strong></p>
+        </footer>
+    </main>
+</body>
+</html>
